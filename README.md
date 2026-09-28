@@ -1,42 +1,65 @@
 # Smart Learning Lab — Instagram Quiz Reel Generator
 
-This version is intentionally Instagram-only. Facebook publishing code has been removed.
+Instagram-only quiz Reel generation pipeline for Smart Learning Lab.
 
 ## Current test scope
 
-- Uses the mixed question JSON only.
-- Generates exactly 5 questions per run.
-- Shuffles those 5 questions.
-- Creates a 720×1280, 30 FPS H.264/AAC MP4.
-- Uploads the local MP4 through Instagram's resumable Reel upload flow.
-- Waits for Meta processing to finish.
-- Publishes the Reel.
-- Advances the mixed-source counter only after successful Instagram publishing.
+This version intentionally runs **one mixed quiz of exactly 5 questions per workflow run**.
+It uses only:
 
-Meta's Reel publishing flow is container-based: create the Reel container, upload the video, poll until `FINISHED`, then call `media_publish`. Resumable upload avoids requiring a public video URL. See Meta's Reels sample and API documentation for the current flow and media requirements. 
+`assets/quiz_data/smart_learning_lab_50000_mixed_questions.json`
 
-## GitHub Actions secrets
+Questions are selected from a persistent source counter and shuffled inside the 5-question quiz.
+The counter advances only after the Instagram Reel is successfully published.
 
-Add:
+## Pipeline
+
+```text
+Mixed JSON question bank
+        ↓
+5-question selector
+        ↓
+Shuffle
+        ↓
+Pillow slides
+        ↓
+TTS narration
+        ↓
+FFmpeg MP4
+        ↓
+720x1280 Reel validation
+        ↓
+Instagram resumable Reel upload
+        ↓
+Instagram processing check
+        ↓
+Instagram publish
+        ↓
+Commit source counter
+```
+
+## GitHub Secrets
+
+Required:
 
 - `INSTAGRAM_BUSINESS_ACCOUNT_ID`
 - `INSTAGRAM_ACCESS_TOKEN`
 
-The Instagram account must be an eligible professional account and the Meta app/token must have the permissions required for content publishing.
+Optional:
+
+- `PAGE_URL`
+
+The workflow uses `META_GRAPH_VERSION=v23.0`.
+
+## Important Instagram validation fix
+
+The account preflight requests only `id,username`.
+It does **not** request `account_type`, because that field can produce Meta Graph API error `#100` for this account endpoint.
 
 ## Schedule
 
-The workflow supports:
+The workflow runs at 02:00, 08:00, 14:00 and 20:00 UTC and also supports manual runs and pushes to `main`.
 
-- manual `workflow_dispatch`
-- every push to `main`, except a history-only commit
-- 02:00, 08:00, 14:00 and 20:00 UTC
+## Old Facebook code
 
-## Local run
-
-```bash
-python -m pip install -r requirements.txt
-python app.py
-```
-
-FFmpeg and FFprobe must be available on PATH.
+Facebook publishing is no longer part of the active pipeline. Delete `services/facebook_service.py` from the repository if it is still present from the previous version.

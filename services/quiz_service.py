@@ -2,8 +2,10 @@ import json
 import random
 from pathlib import Path
 
-from config import QUIZ_DIR, QUIZ_SIZE, MIX_ONLY
+from config import MIXED_QUIZ_FILE, QUIZ_DIR
 from utils.memory import load_memory, save_memory
+
+QUIZ_SIZE = 5
 
 
 def _load_json(path: Path):
@@ -14,62 +16,63 @@ def _load_json(path: Path):
     return data
 
 
-def _is_mix_file(path: Path) -> bool:
-    return "mixed" in path.stem.casefold()
+def fetch_quizzes():
+    """Build exactly one 5-question quiz from the mixed question bank."""
+    path = Path(MIXED_QUIZ_FILE)
+    if not path.is_absolute():
+        path = QUIZ_DIR / path
+    if not path.is_file():
+        raise FileNotFoundError(f"Mixed quiz JSON not found: {path}")
 
-
-def _find_mix_file(files):
-    mix_files = [path for path in files if _is_mix_file(path)]
-    if not mix_files:
-        raise FileNotFoundError(
-            f"No mixed quiz JSON found in {QUIZ_DIR}. Expected a filename containing 'mixed'."
-        )
-    if len(mix_files) > 1:
-        raise ValueError(
-            "Multiple mixed quiz JSON files found: " + ", ".join(p.name for p in mix_files)
-        )
-    return mix_files[0]
-
-
-def fetch_quiz():
-    """Load exactly one shuffled five-question quiz from the mixed question bank."""
-    files = sorted(Path(QUIZ_DIR).glob("*.json"))
-    if not files:
-        raise FileNotFoundError(f"No quiz JSON files found in {QUIZ_DIR}")
-
-    source = _find_mix_file(files) if MIX_ONLY else files[0]
-    data = _load_json(source)
+    data = _load_json(path)
     if len(data) < QUIZ_SIZE:
-        raise ValueError(f"{source.name} contains {len(data)} questions; need {QUIZ_SIZE}.")
+        raise ValueError(
+            f"{path.name} contains only {len(data)} questions; "
+            f"at least {QUIZ_SIZE} are required."
+        )
 
     memory = load_memory()
     counters = memory.setdefault("counters", {})
-    counter = int(counters.get(source.name, 0) or 0)
+    source_key = path.name
+    counter = int(counters.get(source_key, 0) or 0)
+
     if counter + QUIZ_SIZE > len(data):
         counter = 0
 
-    selected = list(data[counter:counter + QUIZ_SIZE])
-    if len(selected) != QUIZ_SIZE:
-        raise ValueError(f"Could not select {QUIZ_SIZE} questions from {source.name}.")
+    batch = list(data[counter:counter + QUIZ_SIZE])
+    if len(batch) != QUIZ_SIZE:
+        raise ValueError(
+            f"Could not select exactly {QUIZ_SIZE} questions from {path.name} "
+            f"at counter {counter}."
+        )
 
-    random.shuffle(selected)
+    random.shuffle(batch)
 
-    print(f"🎯 Mixed source: {source.name}")
-    print(f"📊 Selected questions: {len(selected)} | source counter: {counter}")
-    return {
-        "questions": selected,
+    print(
+        f"🎯 Mixed quiz: {QUIZ_SIZE} questions from {path.name}; "
+        f"starting counter {counter}"
+    )
+
+    return [{
+        "questions": batch,
         "subject": "ALL SUBJECTS",
-        "source_file": source.name,
+        "source_file": source_key,
+        "quiz_number": counter // QUIZ_SIZE + 1,
+        "quiz_count_for_source": max(1, (len(data) + QUIZ_SIZE - 1) // QUIZ_SIZE),
         "counter": counter,
-    }
+    }]
 
 
 def commit_quiz_counter(source_file: str, amount: int = QUIZ_SIZE) -> int:
     memory = load_memory()
-    counters = memory.setdefault("counters", {})
+    counters = memory.get("counters")
+    if not isinstance(counters, dict):
+        counters = {}
+
     current = int(counters.get(source_file, 0) or 0)
     new_value = current + int(amount)
     counters[source_file] = new_value
+    memory["counters"] = counters
     save_memory(memory)
     print(f"💾 Counter committed: {source_file}: {current} -> {new_value}")
     return new_value
