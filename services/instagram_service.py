@@ -17,11 +17,15 @@ GRAPH_BASE = f"https://graph.facebook.com/{META_GRAPH_VERSION}"
 def _require_config():
     if not INSTAGRAM_ACCESS_TOKEN:
         raise ValueError("INSTAGRAM_ACCESS_TOKEN is missing.")
+
     if not INSTAGRAM_BUSINESS_ACCOUNT_ID:
         raise ValueError("INSTAGRAM_BUSINESS_ACCOUNT_ID is missing.")
 
+    print("📸 Instagram Business Account ID: configured")
+
 
 def _response_details(response: requests.Response) -> str:
+    """Return Meta's JSON error without exposing access tokens."""
     try:
         payload = response.json()
         return json.dumps(payload, ensure_ascii=False)
@@ -32,19 +36,16 @@ def _response_details(response: requests.Response) -> str:
 def _raise_meta_error(response: requests.Response, action: str):
     if response.ok:
         return
+
+    details = _response_details(response)
     raise RuntimeError(
         f"Instagram {action} failed: HTTP {response.status_code}. "
-        f"Meta response: {_response_details(response)}"
+        f"Meta response: {details}"
     )
 
 
 def _validate_account():
-    """Validate only fields supported by the configured Instagram account endpoint.
-
-    Do NOT request `account_type`. Meta can return error #100 for that field on
-    Instagram professional-account Graph API requests. The account ID and
-    username are sufficient for this preflight check.
-    """
+    """Confirm that the configured ID is an Instagram professional account."""
     url = f"{GRAPH_BASE}/{INSTAGRAM_BUSINESS_ACCOUNT_ID}"
     response = requests.get(
         url,
@@ -67,10 +68,10 @@ def _validate_account():
         )
 
     print(f"✅ Instagram account validated: @{username}")
-    return data
 
 
 def _create_resumable_container(caption):
+    """Create an Instagram Reel upload container for a local MP4."""
     url = f"{GRAPH_BASE}/{INSTAGRAM_BUSINESS_ACCOUNT_ID}/media"
     response = requests.post(
         url,
@@ -83,11 +84,14 @@ def _create_resumable_container(caption):
         },
         timeout=60,
     )
-    _raise_meta_error(response, "Reel container creation")
+
+    if not response.ok:
+        _raise_meta_error(response, "Reel container creation")
 
     data = response.json()
     container_id = data.get("id")
     upload_uri = data.get("uri")
+
     if not container_id or not upload_uri:
         raise RuntimeError(
             "Instagram Reel container response is incomplete: "
@@ -99,6 +103,7 @@ def _create_resumable_container(caption):
 
 
 def _upload_video(upload_uri, video_path):
+    """Upload the local MP4 to Meta's resumable upload endpoint."""
     path = Path(video_path)
     if not path.is_file():
         raise FileNotFoundError(f"Instagram video not found: {path}")
@@ -128,7 +133,9 @@ def _upload_video(upload_uri, video_path):
             timeout=900,
         )
 
-    _raise_meta_error(response, "binary video upload")
+    if not response.ok:
+        _raise_meta_error(response, "binary video upload")
+
     try:
         result = response.json()
     except ValueError:
@@ -185,7 +192,9 @@ def _publish_container(container_id):
         },
         timeout=60,
     )
-    _raise_meta_error(response, "Reel publishing")
+
+    if not response.ok:
+        _raise_meta_error(response, "Reel publishing")
 
     result = response.json()
     media_id = result.get("id")
@@ -200,7 +209,7 @@ def _publish_container(container_id):
 
 
 def publish_video_to_instagram(video_path, caption):
-    """Upload one local MP4 as an Instagram Reel and publish it."""
+    """Upload one local MP4 as a Reel and publish it to Instagram."""
     _require_config()
     _validate_account()
     container_id, upload_uri = _create_resumable_container(caption)

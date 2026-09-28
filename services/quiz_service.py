@@ -17,10 +17,8 @@ def _load_json(path: Path):
 
 
 def fetch_quizzes():
-    """Build exactly one 5-question quiz from the mixed question bank."""
-    path = Path(MIXED_QUIZ_FILE)
-    if not path.is_absolute():
-        path = QUIZ_DIR / path
+    """Return exactly one 5-question quiz from the mixed JSON source."""
+    path = Path(QUIZ_DIR) / MIXED_QUIZ_FILE
     if not path.is_file():
         raise FileNotFoundError(f"Mixed quiz JSON not found: {path}")
 
@@ -33,9 +31,10 @@ def fetch_quizzes():
 
     memory = load_memory()
     counters = memory.setdefault("counters", {})
-    source_key = path.name
-    counter = int(counters.get(source_key, 0) or 0)
+    counter = int(counters.get(path.name, 0) or 0)
 
+    # Restart at the beginning when the next 5-question window would exceed
+    # the source. This prevents partial quizzes.
     if counter + QUIZ_SIZE > len(data):
         counter = 0
 
@@ -43,27 +42,29 @@ def fetch_quizzes():
     if len(batch) != QUIZ_SIZE:
         raise ValueError(
             f"Could not select exactly {QUIZ_SIZE} questions from {path.name} "
-            f"at counter {counter}."
+            f"at counter {counter}"
         )
 
     random.shuffle(batch)
 
-    print(
-        f"🎯 Mixed quiz: {QUIZ_SIZE} questions from {path.name}; "
-        f"starting counter {counter}"
-    )
-
-    return [{
+    item = {
         "questions": batch,
         "subject": "ALL SUBJECTS",
-        "source_file": source_key,
-        "quiz_number": counter // QUIZ_SIZE + 1,
-        "quiz_count_for_source": max(1, (len(data) + QUIZ_SIZE - 1) // QUIZ_SIZE),
+        "source_file": path.name,
+        "quiz_number": (counter // QUIZ_SIZE) + 1,
+        "quiz_count_for_source": max(1, len(data) // QUIZ_SIZE),
         "counter": counter,
-    }]
+    }
+
+    print(
+        f"🎯 ALL SUBJECTS: selected exactly {QUIZ_SIZE} questions from "
+        f"{path.name}; starting counter {counter}"
+    )
+    return [item]
 
 
 def commit_quiz_counter(source_file: str, amount: int = QUIZ_SIZE) -> int:
+    """Advance the source counter only after successful video publishing."""
     memory = load_memory()
     counters = memory.get("counters")
     if not isinstance(counters, dict):

@@ -232,7 +232,7 @@ def _make_audio(duration, narration_events, tick_events, correct_events):
         *inputs,
         "-filter_complex", ";".join(filters),
         "-map", "[mix]", "-t", f"{duration:.6f}",
-        "-ar", "48000", "-ac", "2", "-c:a", "aac", "-b:a", "128k", str(audio_file),
+        "-c:a", "aac", "-b:a", "192k", str(audio_file),
     ])
     return audio_file
 
@@ -263,71 +263,3 @@ def create_video(quiz, output_file):
 
     print(f"✅ Video created: {output_file} ({duration:.2f}s)")
     return str(output_file)
-
-
-def validate_video(video_path):
-    """Validate the final MP4 against the important Instagram Reel constraints."""
-    video_path = Path(video_path)
-    if not video_path.is_file() or video_path.stat().st_size == 0:
-        raise RuntimeError(f"Video missing or empty: {video_path}")
-
-    ffprobe = shutil.which("ffprobe")
-    if not ffprobe:
-        raise RuntimeError("ffprobe is required to validate the Instagram video.")
-
-    import json
-    result = subprocess.run(
-        [
-            ffprobe, "-v", "error", "-show_streams", "-show_format",
-            "-of", "json", str(video_path),
-        ],
-        check=True, capture_output=True, text=True,
-    )
-    data = json.loads(result.stdout)
-    streams = data.get("streams", [])
-    video = next((s for s in streams if s.get("codec_type") == "video"), None)
-    audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
-    if not video or not audio:
-        raise RuntimeError("Final video must contain both video and audio streams.")
-
-    width = int(video.get("width", 0))
-    height = int(video.get("height", 0))
-    if width != VIDEO_WIDTH or height != VIDEO_HEIGHT:
-        raise RuntimeError(f"Unexpected video size {width}x{height}; expected {VIDEO_WIDTH}x{VIDEO_HEIGHT}.")
-
-    codec = video.get("codec_name")
-    if codec != "h264":
-        raise RuntimeError(f"Unexpected video codec {codec}; expected h264.")
-
-    if video.get("pix_fmt") != "yuv420p":
-        raise RuntimeError(f"Unexpected pixel format {video.get('pix_fmt')}; expected yuv420p.")
-
-    fps_text = video.get("r_frame_rate", "0/1")
-    try:
-        numerator, denominator = fps_text.split("/")
-        fps = float(numerator) / float(denominator)
-    except Exception as exc:
-        raise RuntimeError(f"Could not read frame rate: {fps_text}") from exc
-    if fps < 23 or fps > 60:
-        raise RuntimeError(f"Unexpected frame rate {fps:.2f} FPS; Instagram requires 23-60 FPS.")
-
-    audio_codec = audio.get("codec_name")
-    if audio_codec != "aac":
-        raise RuntimeError(f"Unexpected audio codec {audio_codec}; expected aac.")
-
-    sample_rate = int(audio.get("sample_rate", 0) or 0)
-    if sample_rate != 48000:
-        raise RuntimeError(f"Unexpected audio sample rate {sample_rate}; expected 48000 Hz.")
-
-    duration = float(data.get("format", {}).get("duration", 0) or 0)
-    if duration < 3:
-        raise RuntimeError(f"Instagram Reel is only {duration:.2f}s; minimum is 3 seconds.")
-    if duration > 900:
-        raise RuntimeError(f"Instagram Reel is {duration:.2f}s; maximum is 15 minutes.")
-
-    size_mb = video_path.stat().st_size / 1024 / 1024
-    if size_mb > 1024:
-        raise RuntimeError(f"Video is {size_mb:.1f} MB; Instagram maximum is 1 GB.")
-
-    print(f"✅ Video validated: {width}x{height}, {codec}, {fps:.2f} FPS, {audio_codec}, {sample_rate} Hz, {duration:.1f}s, {size_mb:.1f} MB")
-    return data

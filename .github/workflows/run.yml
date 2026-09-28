@@ -1,4 +1,4 @@
-name: Generate Instagram Quiz Reel
+name: Generate Quiz Videos
 
 on:
   push:
@@ -6,13 +6,14 @@ on:
       - main
   workflow_dispatch:
   schedule:
+    # 02:00, 08:00, 14:00 and 20:00 UTC every day.
     - cron: "0 2,8,14,20 * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: instagram-quiz-reel
+  group: quiz-video
   cancel-in-progress: false
 
 jobs:
@@ -52,28 +53,29 @@ jobs:
             echo '{"version": 2, "counters": {}, "last_run": {}}' > data/history/history.json
           fi
 
-      - name: Generate and publish Instagram Reel
+      - name: Generate and publish one Instagram 5-question Reel
         run: python app.py
         env:
           INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           META_GRAPH_VERSION: v23.0
-          MIXED_QUIZ_FILE: smart_learning_lab_50000_mixed_questions.json
           TTS_VOICE: en-IN-NeerjaNeural
           TTS_RATE: +0%
           TTS_VOLUME: +0%
           PAGE_URL: ${{ secrets.PAGE_URL }}
           VIDEO_WIDTH: 720
           VIDEO_HEIGHT: 1280
-          FPS: 15
+          FPS: 30
           VIDEO_CRF: 30
+          VIDEO_PRESET: ultrafast
           TTS_CONCURRENCY: 6
 
-      - name: Commit quiz counter
+      - name: Commit quiz counters
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add data/history/history.json
-          git commit -m "Update Instagram quiz counter" || exit 0
+          git commit -m "Update quiz source counters" || exit 0
           git pull --rebase origin main
           git push origin main
+

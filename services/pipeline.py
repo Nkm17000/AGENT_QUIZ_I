@@ -19,7 +19,7 @@ For more quizzes, visit: {PAGE_URL}
 
 💬 Drop your answer below
 
-#sscpreparation #upsc #bankexam #railwayexam #ras #ias #mocktest #govtexams #studyreels"""
+#sscpreparation #upsc #bankexam #railwayexam #mocktest #govtexams #studyreels"""
 
 
 def _safe_name(value: str) -> str:
@@ -36,45 +36,48 @@ def _generate_one(item):
     quiz = item["questions"]
     if len(quiz) != QUIZ_SIZE:
         raise RuntimeError(
-            f"{item['source_file']} quiz must contain exactly "
-            f"{QUIZ_SIZE} questions; got {len(quiz)}"
+            f"{item['source_file']} quiz must contain exactly {QUIZ_SIZE} questions; "
+            f"got {len(quiz)}"
         )
 
     print("\n" + "=" * 80)
-    print(f"🎯 Generating Instagram mixed quiz #{item['quiz_number']}")
-    print(f"📊 Questions: {len(quiz)} | source counter: {item['counter']}")
+    print(f"🎯 Generating Instagram Reel: {QUIZ_SIZE}-question mixed quiz")
+    print(f"📊 Source: {item['source_file']} | counter: {item['counter']}")
     print("=" * 80)
 
-    print("🖼️ Rendering slides...")
-    images = generate_images(quiz)
+    images = []
     output_video = _output_path(item)
     output_video.unlink(missing_ok=True)
 
     try:
+        print("🖼️ Rendering slides...")
+        images = generate_images(quiz)
+
         print("🎬 Creating video...")
         create_video(quiz, output_video)
-        if not output_video.is_file():
-            raise RuntimeError(f"Video file was not created: {output_video}")
+
+        if not output_video.is_file() or output_video.stat().st_size <= 0:
+            raise RuntimeError(f"Video file was not created correctly: {output_video}")
 
         if not INSTAGRAM_BUSINESS_ACCOUNT_ID or not INSTAGRAM_ACCESS_TOKEN:
             raise RuntimeError(
-                "Instagram publishing is enabled but credentials are missing. "
-                "Set INSTAGRAM_BUSINESS_ACCOUNT_ID and INSTAGRAM_ACCESS_TOKEN."
+                "Instagram credentials are missing. Set "
+                "INSTAGRAM_BUSINESS_ACCOUNT_ID and INSTAGRAM_ACCESS_TOKEN."
             )
 
         print("📤 Publishing Reel to Instagram...")
         result = publish_video_to_instagram(str(output_video), _caption(item["subject"]))
-        print(f"✅ Instagram publish successful: {result}")
+        print(f"✅ Instagram published successfully: {result}")
 
         new_counter = commit_quiz_counter(item["source_file"], QUIZ_SIZE)
         memory = load_memory()
         last_run = memory.setdefault("last_run", {})
         last_run[item["source_file"]] = {
-            "platform": "instagram",
             "subject": item["subject"],
             "quiz_number": item["quiz_number"],
-            "question_count": QUIZ_SIZE,
             "source_counter_after": new_counter,
+            "platform": "instagram",
+            "questions": QUIZ_SIZE,
         }
         save_memory(memory)
         return str(output_video)
@@ -84,13 +87,21 @@ def _generate_one(item):
 
 def run_pipeline():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print("📥 Preparing 5-question mixed quiz...")
+
+    print("📥 Preparing one 5-question mixed quiz...")
     quiz_jobs = fetch_quizzes()
     if not quiz_jobs:
-        print("🚫 No quiz available")
-        return
+        raise RuntimeError("No mixed quiz available")
 
-    for item in quiz_jobs:
-        _generate_one(item)
+    completed = 0
+    try:
+        for item in quiz_jobs:
+            _generate_one(item)
+            completed += 1
+    finally:
+        # Leave the generated MP4 in output for debugging/inspection.
+        pass
 
-    print("🎉 Instagram mixed quiz pipeline completed successfully.")
+    print("=" * 80)
+    print(f"✅ Instagram quiz jobs completed: {completed}/{len(quiz_jobs)}")
+    print("=" * 80)
