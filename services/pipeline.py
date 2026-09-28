@@ -51,10 +51,10 @@ def _generate_one(item):
 
     try:
         print("🖼️ Rendering slides...")
-        images = generate_images(quiz)
+        images = generate_images(quiz, subject=item["subject"])
 
         print("🎬 Creating video...")
-        create_video(quiz, output_video)
+        create_video(quiz, output_video, subject=item["subject"])
 
         if not output_video.is_file() or output_video.stat().st_size <= 0:
             raise RuntimeError(f"Video file was not created correctly: {output_video}")

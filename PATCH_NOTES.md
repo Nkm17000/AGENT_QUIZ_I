@@ -23,3 +23,12 @@ The previous repository had a version mismatch: `services/video_service.py` impo
 - `.env.example`
 
 Do not replace `data/history/history.json`; keep your existing counter/history.
+
+## 2026-09-29 Instagram visual update
+- Applied subject-specific professional themes to Instagram Reels.
+- Removed diagonal/cross-line decorations and inner frame.
+- Fixed A/B/C/D marker-to-text spacing and Hindi/English option layout.
+- Reserved explanation space and improved explanation contrast.
+- Passed subject from pipeline through video service into renderer.
+- Explicitly suppresses subtitle streams with FFmpeg `-sn`.
+- Preserved Instagram upload/authentication workflow.
