@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from config import INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_BUSINESS_ACCOUNT_ID, OUTPUT_DIR, PAGE_URL
@@ -93,9 +94,19 @@ def run_pipeline():
     if not quiz_jobs:
         raise RuntimeError("No mixed quiz available")
 
+    # A manual GitHub Actions run must publish exactly one video.
+    # Scheduled/push runs keep the existing behavior and may process all jobs.
+    is_manual_run = os.getenv("GITHUB_EVENT_NAME", "").strip().lower() == "workflow_dispatch"
+    jobs_to_process = quiz_jobs[:1] if is_manual_run else quiz_jobs
+
+    if is_manual_run:
+        print("🖐️ Manual run detected: hard limit = 1 Instagram video")
+    else:
+        print(f"🤖 Automated run: processing {len(jobs_to_process)} available quiz job(s)")
+
     completed = 0
     try:
-        for item in quiz_jobs:
+        for item in jobs_to_process:
             _generate_one(item)
             completed += 1
     finally:
@@ -103,5 +114,5 @@ def run_pipeline():
         pass
 
     print("=" * 80)
-    print(f"✅ Instagram quiz jobs completed: {completed}/{len(quiz_jobs)}")
+    print(f"✅ Instagram quiz jobs completed: {completed}/{len(jobs_to_process)}")
     print("=" * 80)

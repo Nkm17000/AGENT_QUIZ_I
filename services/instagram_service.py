@@ -13,6 +13,11 @@ from config import (
 MAX_REEL_BYTES = 1_000 * 1024 * 1024
 GRAPH_BASE = f"https://graph.facebook.com/{META_GRAPH_VERSION}"
 
+# Meta returns this error when the Instagram Content Publishing API quota has
+# been reached. It is a platform/account limit, not a video-format problem.
+PUBLISHING_LIMIT_CODE = 9
+PUBLISHING_LIMIT_SUBCODES = {2207069}
+
 
 def _require_config():
     if not INSTAGRAM_ACCESS_TOKEN:
@@ -31,6 +36,33 @@ def _response_details(response: requests.Response) -> str:
         return json.dumps(payload, ensure_ascii=False)
     except ValueError:
         return response.text[:4000]
+
+
+def _meta_error_payload(response: requests.Response):
+    try:
+        payload = response.json()
+        return payload.get("error") or {}
+    except ValueError:
+        return {}
+
+
+def _is_publishing_limit_error(response: requests.Response) -> bool:
+    """Detect Meta's account-level Content Publishing API limit error."""
+    error = _meta_error_payload(response)
+    try:
+        code = int(error.get("code", -1))
+    except (TypeError, ValueError):
+        code = -1
+
+    try:
+        subcode = int(error.get("error_subcode", -1))
+    except (TypeError, ValueError):
+        subcode = -1
+
+    return (
+        code == PUBLISHING_LIMIT_CODE
+        and subcode in PUBLISHING_LIMIT_SUBCODES
+    )
 
 
 def _raise_meta_error(response: requests.Response, action: str):
@@ -70,6 +102,66 @@ def _validate_account():
     print(f"✅ Instagram account validated: @{username}")
 
 
+def _check_publishing_limit():
+    """
+    Best-effort quota preflight.
+
+    Meta's exact quota response can vary by Graph API version/app setup, so a
+    failure of this optional check does not block publishing. The authoritative
+    POST error is still handled by _create_resumable_container().
+    """
+    url = f"{GRAPH_BASE}/{INSTAGRAM_BUSINESS_ACCOUNT_ID}/content_publishing_limit"
+    try:
+        response = requests.get(
+            url,
+            params={
+                "fields": "config,quota_usage",
+                "access_token": INSTAGRAM_ACCESS_TOKEN,
+            },
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        print(f"ℹ️ Instagram publishing-limit preflight unavailable: {exc}")
+        return False
+
+    if not response.ok:
+        print(
+            "ℹ️ Instagram publishing-limit preflight unavailable; "
+            "continuing to the normal publish request."
+        )
+        return False
+
+    try:
+        data = response.json()
+    except ValueError:
+        return False
+
+    config = data.get("config") or {}
+    quota_usage = data.get("quota_usage")
+
+    # Handle the common response shape without depending on one exact schema.
+    limit = (
+        config.get("quota_total")
+        or config.get("limit")
+        or config.get("max_posts")
+    )
+
+    try:
+        if limit is not None and quota_usage is not None:
+            usage = float(quota_usage)
+            maximum = float(limit)
+            if maximum > 0 and usage >= maximum:
+                print(
+                    f"⛔ Instagram Content Publishing quota reached "
+                    f"({usage:g}/{maximum:g})."
+                )
+                return True
+    except (TypeError, ValueError):
+        pass
+
+    return False
+
+
 def _create_resumable_container(caption):
     """Create an Instagram Reel upload container for a local MP4."""
     url = f"{GRAPH_BASE}/{INSTAGRAM_BUSINESS_ACCOUNT_ID}/media"
@@ -84,6 +176,19 @@ def _create_resumable_container(caption):
         },
         timeout=60,
     )
+
+    if _is_publishing_limit_error(response):
+        error = _meta_error_payload(response)
+        message = error.get("error_user_msg") or error.get("message") or "Media creation limit exceeded"
+        print(
+            "⛔ Instagram Content Publishing API limit reached. "
+            f"Meta: {message}"
+        )
+        print(
+            "ℹ️ No video upload was attempted. The generated MP4 is kept in "
+            "the output directory. Try again after Meta's publishing window resets."
+        )
+        return None, None
 
     if not response.ok:
         _raise_meta_error(response, "Reel container creation")
@@ -209,10 +314,32 @@ def _publish_container(container_id):
 
 
 def publish_video_to_instagram(video_path, caption):
-    """Upload one local MP4 as a Reel and publish it to Instagram."""
+    """
+    Upload one local MP4 as a Reel and publish it.
+
+    Returns:
+      dict  -> successfully published
+      None  -> Meta Content Publishing quota is currently exhausted
+    """
     _require_config()
     _validate_account()
+
+    # Avoid creating another media container when Meta already reports that
+    # the account has exhausted its publishing allowance.
+    if _check_publishing_limit():
+        print(
+            "⏭️ Skipping Instagram publish because the Content Publishing "
+            "limit is currently exhausted."
+        )
+        return None
+
     container_id, upload_uri = _create_resumable_container(caption)
+
+    # The POST above can be the authoritative source of the limit status when
+    # the optional preflight endpoint is unavailable.
+    if not container_id or not upload_uri:
+        return None
+
     _upload_video(upload_uri, video_path)
     _wait_until_ready(container_id)
     return _publish_container(container_id)

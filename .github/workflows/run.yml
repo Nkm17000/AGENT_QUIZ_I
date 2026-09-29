@@ -58,6 +58,7 @@ jobs:
         env:
           INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
           META_GRAPH_VERSION: v23.0
           TTS_VOICE: en-IN-NeerjaNeural
           TTS_RATE: +0%
