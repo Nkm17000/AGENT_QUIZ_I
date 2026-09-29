@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from config import INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_BUSINESS_ACCOUNT_ID, OUTPUT_DIR, PAGE_URL
@@ -8,6 +9,40 @@ from services.video_service import create_video, generate_images
 from utils.file_utils import cleanup
 from utils.memory import load_memory, save_memory
 
+
+class InstagramPublishingLimitError(RuntimeError):
+    """Raised when Meta blocks further Content Publishing API media creation."""
+
+
+IG_COOLDOWN_KEY = "instagram_upload_blocked_until"
+
+
+
+def _instagram_upload_blocked() -> bool:
+    memory = load_memory()
+    raw = memory.get(IG_COOLDOWN_KEY)
+    if not raw:
+        return False
+    try:
+        blocked_until = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        memory.pop(IG_COOLDOWN_KEY, None)
+        save_memory(memory)
+        return False
+    if blocked_until <= datetime.now(timezone.utc):
+        memory.pop(IG_COOLDOWN_KEY, None)
+        save_memory(memory)
+        return False
+    print(f"⏸️ Instagram upload cooldown active until {blocked_until.strftime('%Y-%m-%d %H:%M:%S UTC')}. Skipping this run.")
+    return True
+
+
+def _set_instagram_cooldown(hours: int = 24) -> None:
+    blocked_until = datetime.now(timezone.utc) + timedelta(hours=hours)
+    memory = load_memory()
+    memory[IG_COOLDOWN_KEY] = blocked_until.isoformat()
+    save_memory(memory)
+    print(f"⏸️ Instagram publishing limit reached. Cooldown saved until {blocked_until.strftime('%Y-%m-%d %H:%M:%S UTC')}.")
 
 def _caption(subject: str) -> str:
     return f"""📊 ALL Subject Exam Focus
@@ -68,6 +103,10 @@ def _generate_one(item):
 
         print("📤 Publishing Reel to Instagram...")
         result = publish_video_to_instagram(str(output_video), _caption(item["subject"]))
+        if result is None:
+            raise InstagramPublishingLimitError(
+                "Meta Content Publishing API limit reached; video was generated but not published."
+            )
         print(f"✅ Instagram published successfully: {result}")
 
         new_counter = commit_quiz_counter(item["source_file"], QUIZ_SIZE)
@@ -89,30 +128,41 @@ def _generate_one(item):
 def run_pipeline():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("📥 Preparing one 5-question mixed quiz...")
+    if _instagram_upload_blocked():
+        return
+
+    print("📥 Preparing quizzes for Instagram...")
     quiz_jobs = fetch_quizzes()
     if not quiz_jobs:
-        raise RuntimeError("No mixed quiz available")
+        raise RuntimeError("No quizzes available")
 
-    # A manual GitHub Actions run must publish exactly one video.
-    # Scheduled/push runs keep the existing behavior and may process all jobs.
-    is_manual_run = os.getenv("GITHUB_EVENT_NAME", "").strip().lower() == "workflow_dispatch"
+    event = os.getenv("GITHUB_EVENT_NAME", "").strip().lower()
+    is_manual_run = event in {"workflow_dispatch", "push", ""}
     jobs_to_process = quiz_jobs[:1] if is_manual_run else quiz_jobs
 
     if is_manual_run:
-        print("🖐️ Manual run detected: hard limit = 1 Instagram video")
+        print("🖐️ Manual/push run: exactly 1 Instagram video will be generated.")
     else:
-        print(f"🤖 Automated run: processing {len(jobs_to_process)} available quiz job(s)")
+        print(f"🗓️ Scheduled run: generating {len(jobs_to_process)} Instagram videos (one per subject/source).")
 
     completed = 0
-    try:
-        for item in jobs_to_process:
+    failed = 0
+    for item in jobs_to_process:
+        try:
             _generate_one(item)
             completed += 1
-    finally:
-        # Leave the generated MP4 in output for debugging/inspection.
-        pass
+        except InstagramPublishingLimitError as exc:
+            failed += 1
+            _set_instagram_cooldown()
+            print(f"⏸️ Stopping run after Instagram publishing-limit error: {exc}")
+            break
+        except Exception as exc:
+            failed += 1
+            print(f"❌ Failed {item['subject']} quiz {item['quiz_number']} from {item['source_file']}: {exc}")
+            # Continue to the next subject so one bad source does not block the
+            # other scheduled subject videos.
 
     print("=" * 80)
-    print(f"✅ Instagram quiz jobs completed: {completed}/{len(jobs_to_process)}")
+    print(f"✅ Instagram completed: {completed}/{len(jobs_to_process)}")
+    print(f"❌ Instagram failed: {failed}/{len(jobs_to_process)}")
     print("=" * 80)

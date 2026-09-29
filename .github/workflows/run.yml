@@ -53,7 +53,7 @@ jobs:
             echo '{"version": 2, "counters": {}, "last_run": {}}' > data/history/history.json
           fi
 
-      - name: Generate and publish one Instagram 5-question Reel
+      - name: Generate and publish Instagram quiz videos
         run: python app.py
         env:
           INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
@@ -72,6 +72,7 @@ jobs:
           TTS_CONCURRENCY: 6
 
       - name: Commit quiz counters
+        if: always()
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
