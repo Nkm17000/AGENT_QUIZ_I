@@ -2,11 +2,11 @@
   "version": 3,
   "counters": {
     "smart_learning_lab_50000_mixed_questions.json": 25,
-    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 15,
+    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 20,
     "smart_learning_lab_general_science_10000_questions_reshuffled.json": 15,
-    "smart_learning_lab_math_10000_questions_reshuffled.json": 15,
-    "smart_learning_lab_reasoning_10000_questions_reshuffled.json": 10,
-    "smart_learning_lab_gk_10000_questions_reshuffled.json": 10
+    "smart_learning_lab_math_10000_questions_reshuffled.json": 20,
+    "smart_learning_lab_reasoning_10000_questions_reshuffled.json": 15,
+    "smart_learning_lab_gk_10000_questions_reshuffled.json": 15
   },
   "last_run": {
     "smart_learning_lab_50000_mixed_questions.json": {
@@ -18,8 +18,8 @@
     },
     "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": {
       "subject": "ENGLISH",
-      "quiz_number": 3,
-      "source_counter_after": 15,
+      "quiz_number": 4,
+      "source_counter_after": 20,
       "platform": "instagram",
       "questions": 5
     },
@@ -32,22 +32,22 @@
     },
     "smart_learning_lab_math_10000_questions_reshuffled.json": {
       "subject": "MATH",
-      "quiz_number": 3,
-      "source_counter_after": 15,
+      "quiz_number": 4,
+      "source_counter_after": 20,
       "platform": "instagram",
       "questions": 5
     },
     "smart_learning_lab_reasoning_10000_questions_reshuffled.json": {
       "subject": "REASONING",
-      "quiz_number": 2,
-      "source_counter_after": 10,
+      "quiz_number": 3,
+      "source_counter_after": 15,
       "platform": "instagram",
       "questions": 5
     },
     "smart_learning_lab_gk_10000_questions_reshuffled.json": {
       "subject": "GK",
-      "quiz_number": 2,
-      "source_counter_after": 10,
+      "quiz_number": 3,
+      "source_counter_after": 15,
       "platform": "instagram",
       "questions": 5
     }
