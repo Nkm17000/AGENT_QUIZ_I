@@ -1,39 +1,39 @@
 {
   "version": 3,
   "counters": {
-    "smart_learning_lab_50000_mixed_questions.json": 45,
-    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 40,
-    "smart_learning_lab_general_science_10000_questions_reshuffled.json": 35,
-    "smart_learning_lab_math_10000_questions_reshuffled.json": 40,
+    "smart_learning_lab_50000_mixed_questions.json": 50,
+    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 45,
+    "smart_learning_lab_general_science_10000_questions_reshuffled.json": 40,
+    "smart_learning_lab_math_10000_questions_reshuffled.json": 45,
     "smart_learning_lab_reasoning_10000_questions_reshuffled.json": 35,
-    "smart_learning_lab_gk_10000_questions_reshuffled.json": 35
+    "smart_learning_lab_gk_10000_questions_reshuffled.json": 40
   },
   "last_run": {
     "smart_learning_lab_50000_mixed_questions.json": {
       "subject": "ALL SUBJECTS",
-      "quiz_number": 9,
-      "source_counter_after": 45,
+      "quiz_number": 10,
+      "source_counter_after": 50,
       "platform": "instagram",
       "questions": 5
     },
     "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": {
       "subject": "ENGLISH",
-      "quiz_number": 8,
-      "source_counter_after": 40,
+      "quiz_number": 9,
+      "source_counter_after": 45,
       "platform": "instagram",
       "questions": 5
     },
     "smart_learning_lab_general_science_10000_questions_reshuffled.json": {
       "subject": "GENERAL SCIENCE",
-      "quiz_number": 7,
-      "source_counter_after": 35,
+      "quiz_number": 8,
+      "source_counter_after": 40,
       "platform": "instagram",
       "questions": 5
     },
     "smart_learning_lab_math_10000_questions_reshuffled.json": {
       "subject": "MATH",
-      "quiz_number": 8,
-      "source_counter_after": 40,
+      "quiz_number": 9,
+      "source_counter_after": 45,
       "platform": "instagram",
       "questions": 5
     },
@@ -46,8 +46,8 @@
     },
     "smart_learning_lab_gk_10000_questions_reshuffled.json": {
       "subject": "GK",
-      "quiz_number": 7,
-      "source_counter_after": 35,
+      "quiz_number": 8,
+      "source_counter_after": 40,
       "platform": "instagram",
       "questions": 5
     }
