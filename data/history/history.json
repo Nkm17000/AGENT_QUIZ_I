@@ -1,25 +1,27 @@
 {
   "version": 3,
   "counters": {
-    "smart_learning_lab_50000_mixed_questions.json": 70,
-    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 70,
+    "smart_learning_lab_50000_mixed_questions.json": 75,
+    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 75,
     "smart_learning_lab_general_science_10000_questions_reshuffled.json": 65,
-    "smart_learning_lab_math_10000_questions_reshuffled.json": 70,
-    "smart_learning_lab_reasoning_10000_questions_reshuffled.json": 60,
-    "smart_learning_lab_gk_10000_questions_reshuffled.json": 65
+    "smart_learning_lab_math_10000_questions_reshuffled.json": 75,
+    "smart_learning_lab_reasoning_10000_questions_reshuffled.json": 65,
+    "smart_learning_lab_gk_10000_questions_reshuffled.json": 65,
+    "computer_science_10000_bilingual_ssc_cgl_reshuffled.json": 5,
+    "rajasthan_gk_10000_bilingual_ssc_cgl_reshuffled.json": 5
   },
   "last_run": {
     "smart_learning_lab_50000_mixed_questions.json": {
       "subject": "ALL SUBJECTS",
-      "quiz_number": 14,
-      "source_counter_after": 70,
+      "quiz_number": 15,
+      "source_counter_after": 75,
       "platform": "instagram",
       "questions": 5
     },
     "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": {
       "subject": "ENGLISH",
-      "quiz_number": 14,
-      "source_counter_after": 70,
+      "quiz_number": 15,
+      "source_counter_after": 75,
       "platform": "instagram",
       "questions": 5
     },
@@ -32,15 +34,15 @@
     },
     "smart_learning_lab_math_10000_questions_reshuffled.json": {
       "subject": "MATH",
-      "quiz_number": 14,
-      "source_counter_after": 70,
+      "quiz_number": 15,
+      "source_counter_after": 75,
       "platform": "instagram",
       "questions": 5
     },
     "smart_learning_lab_reasoning_10000_questions_reshuffled.json": {
       "subject": "REASONING",
-      "quiz_number": 12,
-      "source_counter_after": 60,
+      "quiz_number": 13,
+      "source_counter_after": 65,
       "platform": "instagram",
       "questions": 5
     },
@@ -48,6 +50,20 @@
       "subject": "GK",
       "quiz_number": 13,
       "source_counter_after": 65,
+      "platform": "instagram",
+      "questions": 5
+    },
+    "computer_science_10000_bilingual_ssc_cgl_reshuffled.json": {
+      "subject": "COMPUTER SCIENCE",
+      "quiz_number": 1,
+      "source_counter_after": 5,
+      "platform": "instagram",
+      "questions": 5
+    },
+    "rajasthan_gk_10000_bilingual_ssc_cgl_reshuffled.json": {
+      "subject": "RAJASTHAN GK",
+      "quiz_number": 1,
+      "source_counter_after": 5,
       "platform": "instagram",
       "questions": 5
     }
