@@ -2,7 +2,7 @@
   "version": 3,
   "counters": {
     "smart_learning_lab_50000_mixed_questions.json": 70,
-    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 65,
+    "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": 70,
     "smart_learning_lab_general_science_10000_questions_reshuffled.json": 65,
     "smart_learning_lab_math_10000_questions_reshuffled.json": 70,
     "smart_learning_lab_reasoning_10000_questions_reshuffled.json": 60,
@@ -18,8 +18,8 @@
     },
     "smart_learning_lab_english_grammar_10000_questions_reshuffled.json": {
       "subject": "ENGLISH",
-      "quiz_number": 13,
-      "source_counter_after": 65,
+      "quiz_number": 14,
+      "source_counter_after": 70,
       "platform": "instagram",
       "questions": 5
     },
