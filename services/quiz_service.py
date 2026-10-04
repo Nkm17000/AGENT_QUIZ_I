@@ -26,8 +26,12 @@ def _subject_from_file(path: Path) -> str:
     if _is_mix_file(path):
         return "ALL SUBJECTS"
     exact_patterns = (
+        # Keep specific subjects before generic GK so rajasthan_gk is not
+        # accidentally classified as the generic GK subject.
         ("english_grammar", "ENGLISH"),
         ("general_science", "GENERAL SCIENCE"),
+        ("computer_science", "COMPUTER SCIENCE"),
+        ("rajasthan_gk", "RAJASTHAN GK"),
         ("reasoning", "REASONING"),
         ("math", "MATH"),
         ("gk", "GK"),
@@ -86,6 +90,18 @@ def fetch_quizzes():
 
     print(f"📦 Total quizzes this run: {len(quizzes)}")
     return quizzes
+
+
+def get_manual_quiz(quizzes):
+    """Return the English quiz for manual/push runs.
+
+    The list is alphabetically sorted, so adding a new source such as
+    computer_science must not change the existing manual-run subject.
+    """
+    for item in quizzes:
+        if item["subject"] == "ENGLISH":
+            return item
+    raise RuntimeError("Manual run requires the ENGLISH quiz source, but it was not found.")
 
 
 def commit_quiz_counter(source_file: str, amount: int = QUIZ_SIZE) -> int:

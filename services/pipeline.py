@@ -4,7 +4,7 @@ from pathlib import Path
 
 from config import INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_BUSINESS_ACCOUNT_ID, OUTPUT_DIR, PAGE_URL
 from services.instagram_service import publish_video_to_instagram
-from services.quiz_service import QUIZ_SIZE, commit_quiz_counter, fetch_quizzes
+from services.quiz_service import QUIZ_SIZE, commit_quiz_counter, fetch_quizzes, get_manual_quiz
 from services.video_service import create_video, generate_images
 from utils.file_utils import cleanup
 from utils.memory import load_memory, save_memory
@@ -138,10 +138,10 @@ def run_pipeline():
 
     event = os.getenv("GITHUB_EVENT_NAME", "").strip().lower()
     is_manual_run = event in {"workflow_dispatch", "push", ""}
-    jobs_to_process = quiz_jobs[:1] if is_manual_run else quiz_jobs
+    jobs_to_process = [get_manual_quiz(quiz_jobs)] if is_manual_run else quiz_jobs
 
     if is_manual_run:
-        print("🖐️ Manual/push run: exactly 1 Instagram video will be generated.")
+        print("🖐️ Manual/push run: exactly 1 Instagram video will be generated (ENGLISH).")
     else:
         print(f"🗓️ Scheduled run: generating {len(jobs_to_process)} Instagram videos (one per subject/source).")
 
