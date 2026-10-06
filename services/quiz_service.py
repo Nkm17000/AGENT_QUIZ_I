@@ -5,8 +5,23 @@ from pathlib import Path
 from config import QUIZ_DIR
 from utils.memory import load_memory, save_memory
 
-QUIZ_SIZE = 5
-MIX_QUIZ_COUNT = 1
+QUIZ_SIZE = 10
+
+# Eight subject runs per push/manual execution. Five use the dedicated banks
+# shipped with this repository; the remaining three are selected from the
+# mixed 50,000-question bank by category.
+SUBJECT_JOBS = [
+    {"subject": "ENGLISH", "file": "smart_learning_lab_english_grammar_10000_questions_reshuffled.json"},
+    {"subject": "GENERAL SCIENCE", "file": "smart_learning_lab_general_science_10000_questions_reshuffled.json"},
+    {"subject": "GK", "file": "smart_learning_lab_gk_10000_questions_reshuffled.json"},
+    {"subject": "MATH", "file": "smart_learning_lab_math_10000_questions_reshuffled.json"},
+    {"subject": "REASONING", "file": "smart_learning_lab_reasoning_10000_questions_reshuffled.json"},
+    {"subject": "HISTORY", "file": "smart_learning_lab_50000_mixed_questions.json", "category": "History"},
+    {"subject": "GEOGRAPHY", "file": "smart_learning_lab_50000_mixed_questions.json", "category": "Geography"},
+    {"subject": "POLITY", "file": "smart_learning_lab_50000_mixed_questions.json", "category": "Polity"},
+    {"subject": "COMPUTER SCIENCE", "file": "computer_science_10000_bilingual_ssc_cgl_reshuffled.json"},
+    {"subject": "RAJASTHAN GK", "file": "rajasthan_gk_10000_bilingual_ssc_cgl_reshuffled.json"},
+]
 
 
 def _load_json(path: Path):
@@ -17,91 +32,85 @@ def _load_json(path: Path):
     return data
 
 
-def _is_mix_file(path: Path) -> bool:
-    return "mixed" in path.stem.casefold()
+def _matches_category(item, category):
+    return str(item.get("category", "")).strip().casefold() == category.casefold()
 
 
-def _subject_from_file(path: Path) -> str:
-    stem = path.stem.casefold()
-    if _is_mix_file(path):
-        return "ALL SUBJECTS"
-    exact_patterns = (
-        # Keep specific subjects before generic GK so rajasthan_gk is not
-        # accidentally classified as the generic GK subject.
-        ("english_grammar", "ENGLISH"),
-        ("general_science", "GENERAL SCIENCE"),
-        ("computer_science", "COMPUTER SCIENCE"),
-        ("rajasthan_gk", "RAJASTHAN GK"),
-        ("reasoning", "REASONING"),
-        ("math", "MATH"),
-        ("gk", "GK"),
-    )
-    for pattern, subject in exact_patterns:
-        if pattern in stem:
-            return subject
-    return path.stem.replace("_", " ").upper()
+def _select_questions(data, job, counter):
+    category = job.get("category")
+    if category:
+        pool = [item for item in data if _matches_category(item, category)]
+    else:
+        pool = data
+
+    if len(pool) < QUIZ_SIZE:
+        raise ValueError(
+            f"Not enough questions for {job['subject']}: {len(pool)} available; "
+            f"need at least {QUIZ_SIZE}."
+        )
+
+    if counter + QUIZ_SIZE > len(pool):
+        counter = 0
+
+    batch = list(pool[counter:counter + QUIZ_SIZE])
+    if len(batch) != QUIZ_SIZE:
+        raise ValueError(
+            f"Could not select {QUIZ_SIZE} questions for {job['subject']} "
+            f"at counter {counter}."
+        )
+    random.shuffle(batch)
+    return batch, counter, len(pool)
 
 
-def fetch_quizzes():
-    """Return one quiz for every supported JSON source.
-
-    Normal subject files produce one 5-question quiz each. The mixed file
-    produces one 5-question quiz. Each source has its own persistent counter.
-    """
-    files = sorted(Path(QUIZ_DIR).glob("*.json"))
+def fetch_quizzes(subject_index=None):
+    """Return subject quizzes; when subject_index is set, return only that subject."""
+    files = {p.name: p for p in Path(QUIZ_DIR).glob("*.json")}
     if not files:
         raise FileNotFoundError(f"No quiz JSON files found in {QUIZ_DIR}")
-
-    mix_files = [path for path in files if _is_mix_file(path)]
-    if len(mix_files) > 1:
-        raise ValueError("Only one mixed-question JSON file is supported; found: " + ", ".join(path.name for path in mix_files))
 
     memory = load_memory()
     counters = memory.get("counters")
     if not isinstance(counters, dict):
         counters = {}
 
-    quizzes = []
-    for path in files:
+    jobs = []
+    selected_jobs = SUBJECT_JOBS
+    if subject_index is not None:
+        subject_index = int(subject_index)
+        if subject_index < 0 or subject_index >= len(SUBJECT_JOBS):
+            raise ValueError(f"SUBJECT_INDEX must be 0-{len(SUBJECT_JOBS)-1}; got {subject_index}")
+        selected_jobs = [SUBJECT_JOBS[subject_index]]
+
+    for job in selected_jobs:
+        path = files.get(job["file"])
+        if path is None:
+            raise FileNotFoundError(
+                f"Required quiz bank missing for {job['subject']}: {job['file']}"
+            )
+
         data = _load_json(path)
-        if len(data) < QUIZ_SIZE:
-            raise ValueError(f"{path.name} contains only {len(data)} questions; at least {QUIZ_SIZE} are required.")
-
-        source_key = path.name
+        source_key = path.name + (f"::{job['category']}" if job.get("category") else "")
         counter = int(counters.get(source_key, 0) or 0)
-        if counter + QUIZ_SIZE > len(data):
-            counter = 0
+        batch, counter, pool_size = _select_questions(data, job, counter)
 
-        batch = list(data[counter:counter + QUIZ_SIZE])
-        if len(batch) != QUIZ_SIZE:
-            raise ValueError(f"Could not select {QUIZ_SIZE} questions from {source_key} at counter {counter}")
-        random.shuffle(batch)
-
-        subject = _subject_from_file(path)
-        quizzes.append({
+        item = {
             "questions": batch,
-            "subject": subject,
+            "subject": job["subject"],
             "source_file": source_key,
+            "source_path": path.name,
+            "category": job.get("category"),
             "quiz_number": (counter // QUIZ_SIZE) + 1,
-            "quiz_count_for_source": max(1, len(data) // QUIZ_SIZE),
+            "quiz_count_for_source": max(1, pool_size // QUIZ_SIZE),
             "counter": counter,
-        })
-        print(f"🎯 {subject}: planned 1 quiz of {QUIZ_SIZE} questions from {source_key}; starting counter {counter}")
+        }
+        jobs.append(item)
+        print(
+            f"🎯 {job['subject']}: {QUIZ_SIZE} questions | "
+            f"source={path.name} | counter={counter}"
+        )
 
-    print(f"📦 Total quizzes this run: {len(quizzes)}")
-    return quizzes
-
-
-def get_manual_quiz(quizzes):
-    """Return the English quiz for manual/push runs.
-
-    The list is alphabetically sorted, so adding a new source such as
-    computer_science must not change the existing manual-run subject.
-    """
-    for item in quizzes:
-        if item["subject"] == "ENGLISH":
-            return item
-    raise RuntimeError("Manual run requires the ENGLISH quiz source, but it was not found.")
+    print(f"📦 Total videos this run: {len(jobs)}")
+    return jobs
 
 
 def commit_quiz_counter(source_file: str, amount: int = QUIZ_SIZE) -> int:
