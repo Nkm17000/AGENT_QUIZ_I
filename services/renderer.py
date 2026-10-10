@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-from config import ASSETS_DIR, LOGO_FILE, VIDEO_HEIGHT, VIDEO_WIDTH
+from config import ASSETS_DIR, VIDEO_HEIGHT, VIDEO_WIDTH
 
 DEVANAGARI_RE = re.compile(r"[\u0900-\u097F\u1CD0-\u1CFF\uA8E0-\uA8FF]")
 FONT_EN = ASSETS_DIR / "fonts" / "DejaVuSans.ttf"
@@ -127,27 +127,26 @@ def _logo():
     if _LOGO is not None:
         return _LOGO
 
-    # Use the complete current logo. The old fixed crop was designed for an
-    # earlier icon-only asset and cropped almost all of the new square logo out.
-    with Image.open(LOGO_FILE) as opened:
-        source = opened.convert("RGBA")
-    source.thumbnail((220, 220), Image.Resampling.LANCZOS)
+    # This asset is a complete circular brand badge. Keep the whole image so
+    # both the emblem and the "SMART LEARNING LAB 247" name remain visible.
+    source = Image.open(ASSETS_DIR / "logo.png").convert("RGBA")
+    source.thumbnail((204, 204), Image.Resampling.LANCZOS)
 
-    # Render the logo in a circular badge rather than a square/rounded-square tile.
     size = 230
-    badge = Image.new("RGBA", (size, size), (255, 255, 255, 0))
-    circle = Image.new("L", (size, size), 0)
-    ImageDraw.Draw(circle).ellipse((3, 3, size - 4, size - 4), fill=255)
-    # Keep the complete supplied logo centered inside the circular badge.
-    inner = Image.new("RGBA", (size, size), (255, 255, 255, 255))
+    badge = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).ellipse((8, 10, size - 2, size - 2), fill=(0, 0, 0, 90))
+    badge.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(7)))
+
+    mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(mask).ellipse((1, 1, size - 2, size - 2), fill=255)
+    white = Image.new("RGBA", (size, size), (255, 255, 255, 255))
+    white.putalpha(mask)
+    badge.alpha_composite(white)
+
     x = (size - source.width) // 2
     y = (size - source.height) // 2
-    inner.alpha_composite(source, (x, y))
-    inner.putalpha(circle)
-    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    ImageDraw.Draw(shadow).ellipse((5, 5, size - 5, size - 5), fill=(0, 0, 0, 65))
-    badge.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(4)))
-    badge.alpha_composite(inner)
+    badge.alpha_composite(source, (x, y))
     _LOGO = badge
     return _LOGO
 
@@ -681,7 +680,7 @@ def _draw_finger_icon(draw, x, y, scale=1.0, fill=(255, 224, 189, 255), outline=
 
 def render_cta(subject=None, quiz_number=None, output=None):
     """Render the final Like/Subscribe/website call-to-action slide."""
-    from config import PAGE_URL
+    from config import PAGE_URL, app_name
 
     theme = _theme(subject)
     image = _background(subject)
@@ -725,7 +724,7 @@ def render_cta(subject=None, quiz_number=None, output=None):
 
     _draw_fit(
         draw,
-        "Visit Smart Learning Lab",
+        f"Visit {app_name}",
         (70, 600, VIDEO_WIDTH - 70, 675),
         theme["muted"] + (255,),
         31,
@@ -765,7 +764,7 @@ def render_cta(subject=None, quiz_number=None, output=None):
 
     _draw_fit(
         draw,
-        "SMART LEARNING LAB",
+        app_name.upper(),
         (80, 1130, VIDEO_WIDTH - 80, 1200),
         theme["footer"] + (255,),
         26,
