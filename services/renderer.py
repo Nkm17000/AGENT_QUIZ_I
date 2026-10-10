@@ -683,7 +683,7 @@ def _draw_finger_icon(draw, x, y, scale=1.0, fill=(255, 224, 189, 255), outline=
 
 def render_cta(subject=None, quiz_number=None, output=None):
     """Render the final Like/Subscribe/website call-to-action slide."""
-    from config import PAGE_URL
+    from config import APP_NAME, PAGE_URL
 
     theme = _theme(subject)
     image = _background(subject)
@@ -727,7 +727,7 @@ def render_cta(subject=None, quiz_number=None, output=None):
 
     _draw_fit(
         draw,
-        "Visit Smart Learning Lab",
+        f"Visit {APP_NAME}",
         (70, 600, VIDEO_WIDTH - 70, 675),
         theme["muted"] + (255,),
         31,

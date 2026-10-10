@@ -1,4 +1,4 @@
-# Smart Learning Lab — Instagram Quiz Reel Generator
+# Smart Learning Lab 247 — Instagram Quiz Reel Generator
 
 Generates and publishes **10 subject Instagram Reels per scheduled workflow run**, with exactly **10 questions per Reel**, containing exactly **10 questions**.
 
@@ -52,7 +52,11 @@ Required:
 
 Optional:
 
-- `PAGE_URL`
+- `APP_NAME` — display name (default: `Smart Learning Lab 247`)
+- `INSTAGRAM_PAGE_URL` — Instagram page URL
+- `FACEBOOK_PAGE_URL` — Facebook page URL
+- `EDUAPPNAME` — education app URL
+- `PAGE_URL` — legacy-compatible website URL override
 
 The repository must be **public** because Instagram needs to download the MP4 from the public GitHub Release URL.
 
