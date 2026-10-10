@@ -3,7 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from config import APP_NAME, FACEBOOK_PAGE_URL, INSTAGRAM_PAGE_URL, EDUAPPNAME, OUTPUT_DIR, PAGE_URL
+from config import OUTPUT_DIR, PAGE_URL
 from services.quiz_service import QUIZ_SIZE, fetch_quizzes
 from services.video_service import create_video, generate_images
 from services.audio_service import ensure_question_audio_batch
@@ -16,13 +16,13 @@ PENDING_FILE = OUTPUT_DIR / "pending_publish.json"
 def _caption(subject: str) -> str:
     return f"""📊 {subject} Exam Focus
 
-📚 Daily practice from {APP_NAME}
+📚 Daily practice for serious aspirants
 
 🎯 SSC | UPSC | Banking | Railway | RAS | IAS
 
-🌐 Learn: {EDUAPPNAME}
-📸 Instagram: {INSTAGRAM_PAGE_URL}
-📘 Facebook: {FACEBOOK_PAGE_URL}
+📸 Instagram: @smartlearinglab247
+
+For more quizzes, visit: {PAGE_URL}
 
 💬 Drop your answer below
 

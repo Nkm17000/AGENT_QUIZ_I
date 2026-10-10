@@ -6,6 +6,7 @@ from config import QUIZ_DIR
 from utils.memory import load_memory, save_memory
 
 QUIZ_SIZE = 10
+MAX_SOURCE_COUNTER = 170  # Quiz 17 is the final allowed quiz (10 questions per quiz).
 
 # Ten subject runs per push/manual execution. Every subject has its own
 # dedicated question bank so counters and question windows remain completely
@@ -83,6 +84,16 @@ def fetch_quizzes(subject_index=None):
         data = _load_json(path)
         source_key = path.name
         counter = int(counters.get(source_key, 0) or 0)
+        if counter >= MAX_SOURCE_COUNTER:
+            raise RuntimeError(
+                f"{job['subject']} reached the configured final quiz: "
+                f"source_counter_after={MAX_SOURCE_COUNTER}. No later quiz is allowed."
+            )
+        if counter + QUIZ_SIZE > MAX_SOURCE_COUNTER:
+            raise RuntimeError(
+                f"{job['subject']} has only {MAX_SOURCE_COUNTER - counter} questions "
+                f"remaining before the source counter cap of {MAX_SOURCE_COUNTER}."
+            )
         batch, counter, pool_size = _select_questions(data, job, counter)
 
         item = {

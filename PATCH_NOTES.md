@@ -1,11 +1,10 @@
-# Instagram Quiz Publishing Behavior
+# Impacted files — Smart Learning Lab 247 quiz 17 update
 
-- The project has 10 independent subject question banks: English, General Science, GK, Math, Reasoning, History, Geography, Polity, Computer Science, and Rajasthan GK.
-- Every question bank is physically shuffled and contains its own independent sequence.
-- Each generated quiz contains exactly 10 questions.
-- Generation runs all 10 subjects in parallel with a maximum of 5 jobs at once.
-- Instagram publishing is limited to one video at a time.
-- Source counters advance only after successful Instagram publishing.
-- If some Instagram publishers fail, only successfully published subjects advance their counters/history.
-- The old mixed History/Geography/Polity JSON is no longer used.
-- The Instagram publishing flow uses a temporary public GitHub Release asset as the Reel `video_url`.
+- `assets/logo.png`: replaced with supplied full logo.
+- `services/renderer.py`: fixed outdated fixed-coordinate crop that cut out the new logo; renderer now uses the complete logo asset.
+- `services/pipeline.py`: adds `@smartlearinglab247` to every generated Instagram caption.
+- `services/quiz_service.py`: starts at source counter 160 (quiz 17) and blocks quiz generation once a source counter reaches 170.
+- `data/history/history.json`: sets each source counter to 160 so the next successful quiz is quiz 17 and commits to 170.
+- `config.py`: logo path is now used by the renderer through `LOGO_FILE`.
+
+Regression: Python compilation, caption check, counter-state check, logo-render check, and a 2-second H.264 MP4 render/ffprobe validation passed. This test MP4 is a technical rendering check, not a full narration/publishing integration test.
