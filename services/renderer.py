@@ -133,15 +133,21 @@ def _logo():
         source = opened.convert("RGBA")
     source.thumbnail((220, 220), Image.Resampling.LANCZOS)
 
+    # Render the logo in a circular badge rather than a square/rounded-square tile.
     size = 230
-    badge = Image.new("RGBA", (size, size), (255, 255, 255, 255))
-    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    ImageDraw.Draw(shadow).rounded_rectangle((5, 5, size - 5, size - 5), radius=16, fill=(0, 0, 0, 65))
-    badge.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(4)))
-    badge.alpha_composite(Image.new("RGBA", (size, size), (255, 255, 255, 255)))
+    badge = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+    circle = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(circle).ellipse((3, 3, size - 4, size - 4), fill=255)
+    # Keep the complete supplied logo centered inside the circular badge.
+    inner = Image.new("RGBA", (size, size), (255, 255, 255, 255))
     x = (size - source.width) // 2
     y = (size - source.height) // 2
-    badge.alpha_composite(source, (x, y))
+    inner.alpha_composite(source, (x, y))
+    inner.putalpha(circle)
+    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).ellipse((5, 5, size - 5, size - 5), fill=(0, 0, 0, 65))
+    badge.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(4)))
+    badge.alpha_composite(inner)
     _LOGO = badge
     return _LOGO
 

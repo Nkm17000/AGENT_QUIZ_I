@@ -3,7 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from config import OUTPUT_DIR, PAGE_URL
+from config import INSTAGRAM_HANDLE, INSTAGRAM_PAGE_URL, OUTPUT_DIR, PAGE_URL
 from services.quiz_service import QUIZ_SIZE, fetch_quizzes
 from services.video_service import create_video, generate_images
 from services.audio_service import ensure_question_audio_batch
@@ -20,9 +20,11 @@ def _caption(subject: str) -> str:
 
 🎯 SSC | UPSC | Banking | Railway | RAS | IAS
 
-📸 Instagram: @smartlearinglab247
+📸 Instagram: {INSTAGRAM_HANDLE}
 
 For more quizzes, visit: {PAGE_URL}
+
+Follow us: {INSTAGRAM_PAGE_URL}
 
 💬 Drop your answer below
 

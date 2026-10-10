@@ -35,20 +35,9 @@ TICK_AUDIO = ASSETS_DIR / "tick.mp3"
 CORRECT_AUDIO = ASSETS_DIR / "correct.mp3"
 LOGO_FILE = ASSETS_DIR / "logo.png"
 
-# Centralized public branding and social links. Change these values here (or
-# override them with environment variables) to rebrand without code edits.
-APP_NAME = os.getenv("APP_NAME", "Smart Learning Lab 247").strip() or "Smart Learning Lab 247"
-INSTAGRAM_PAGE_URL = os.getenv(
-    "INSTAGRAM_PAGE_URL", "https://www.instagram.com/smartlearninglab247"
-).strip()
-FACEBOOK_PAGE_URL = os.getenv(
-    "FACEBOOK_PAGE_URL", "https://www.facebook.com/smartlearninglab247"
-).strip()
-EDUAPPNAME = os.getenv(
-    "EDUAPPNAME", "https://smartlearninglab-react.pages.dev/"
-).strip()
-# Backward-compatible alias used by existing pipeline and renderer code.
-PAGE_URL = os.getenv("PAGE_URL", EDUAPPNAME).strip()
+PAGE_URL = os.getenv("PAGE_URL", "https://smartlearninglab-react.pages.dev/").strip()
+INSTAGRAM_PAGE_URL = os.getenv("INSTAGRAM_PAGE_URL", "https://www.instagram.com/smartlearninglab247").strip()
+INSTAGRAM_HANDLE = os.getenv("INSTAGRAM_HANDLE", "@smartlearninglab247").strip()
 META_GRAPH_VERSION = os.getenv("META_GRAPH_VERSION", "v23.0").strip()
 INSTAGRAM_BUSINESS_ACCOUNT_ID = (os.getenv("INSTAGRAM_BUSINESS_ACCOUNT_ID") or "").strip()
 INSTAGRAM_ACCESS_TOKEN = (os.getenv("INSTAGRAM_ACCESS_TOKEN") or "").strip()
